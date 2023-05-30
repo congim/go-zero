@@ -172,6 +172,48 @@ func Infow(msg string, fields ...LogField) {
 	infoFieldsSync(msg, fields...)
 }
 
+// Debug writes v into access log.
+func Debug(v ...interface{}) {
+	debugTextSync(fmt.Sprint(v...))
+}
+
+// Debugf writes v with format into access log.
+func Debugf(format string, v ...interface{}) {
+	debugTextSync(fmt.Sprintf(format, v...))
+}
+
+// Debugv writes v into access log with json content.
+func Debugv(v interface{}) {
+	debugAnySync(v)
+}
+
+// Debugw writes msg along with fields into access log.
+func Debugw(msg string, fields ...LogField) {
+	debugFieldsSync(msg, fields...)
+}
+
+// warn
+
+// Warn writes v into access log.
+func Warn(v ...interface{}) {
+	warnTextSync(fmt.Sprint(v...))
+}
+
+// Warnf writes v with format into access log.
+func Warnf(format string, v ...interface{}) {
+	warnTextSync(fmt.Sprintf(format, v...))
+}
+
+// Warnv writes v into access log with json content.
+func Warnv(v interface{}) {
+	warnAnySync(v)
+}
+
+// Warnw writes msg along with fields into access log.
+func Warnw(msg string, fields ...LogField) {
+	warnFieldsSync(msg, fields...)
+}
+
 // Must checks if err is nil, otherwise logs the error and exits.
 func Must(err error) {
 	if err == nil {
@@ -387,10 +429,52 @@ func infoTextSync(msg string) {
 	}
 }
 
+func debugAnySync(val interface{}) {
+	if shallLog(DebugLevel) {
+		getWriter().Debug(val)
+	}
+}
+
+func debugFieldsSync(content string, fields ...LogField) {
+	if shallLog(DebugLevel) {
+		getWriter().Debug(content, fields...)
+	}
+}
+
+func debugTextSync(msg string) {
+	if shallLog(DebugLevel) {
+		getWriter().Debug(msg)
+	}
+}
+
+// warn
+
+func warnAnySync(val interface{}) {
+	if shallLog(WarnLevel) {
+		getWriter().Warn(val)
+	}
+}
+
+func warnFieldsSync(content string, fields ...LogField) {
+	if shallLog(WarnLevel) {
+		getWriter().Warn(content, fields...)
+	}
+}
+
+func warnTextSync(msg string) {
+	if shallLog(WarnLevel) {
+		getWriter().Warn(msg)
+	}
+}
+
 func setupLogLevel(c LogConf) {
 	switch c.Level {
+	case levelDebug:
+		SetLevel(DebugLevel)
 	case levelInfo:
 		SetLevel(InfoLevel)
+	case levelWarn:
+		SetLevel(WarnLevel)
 	case levelError:
 		SetLevel(ErrorLevel)
 	case levelSevere:

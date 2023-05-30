@@ -3,8 +3,9 @@ package logx
 import "errors"
 
 const (
-	// InfoLevel logs everything
-	InfoLevel uint32 = iota
+	DebugLevel uint32 = iota
+	InfoLevel
+	WarnLevel
 	// ErrorLevel includes errors, slows, stacks
 	ErrorLevel
 	// SevereLevel only log severe messages
@@ -22,6 +23,8 @@ const (
 
 const (
 	accessFilename = "access.log"
+	debugFilename  = "debug.log"
+	warnFilename   = "warn.log"
 	errorFilename  = "error.log"
 	severeFilename = "severe.log"
 	slowFilename   = "slow.log"
@@ -31,6 +34,8 @@ const (
 	volumeMode = "volume"
 
 	levelAlert  = "alert"
+	levelDebug  = "debug"
+	levelWarn   = "warn"
 	levelInfo   = "info"
 	levelError  = "error"
 	levelSevere = "severe"

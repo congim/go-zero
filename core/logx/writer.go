@@ -19,6 +19,8 @@ type (
 		Alert(v interface{})
 		Close() error
 		Error(v interface{}, fields ...LogField)
+		Debug(v interface{}, fields ...LogField)
+		Warn(v interface{}, fields ...LogField)
 		Info(v interface{}, fields ...LogField)
 		Severe(v interface{})
 		Slow(v interface{}, fields ...LogField)
@@ -32,7 +34,9 @@ type (
 	}
 
 	concreteWriter struct {
+		debugLog  io.WriteCloser
 		infoLog   io.WriteCloser
+		warnLog   io.WriteCloser
 		errorLog  io.WriteCloser
 		severeLog io.WriteCloser
 		slowLog   io.WriteCloser
@@ -46,7 +50,9 @@ func NewWriter(w io.Writer) Writer {
 	lw := newLogWriter(log.New(w, "", flags))
 
 	return &concreteWriter{
+		debugLog:  lw,
 		infoLog:   lw,
+		warnLog:   lw,
 		errorLog:  lw,
 		severeLog: lw,
 		slowLog:   lw,
@@ -79,7 +85,9 @@ func newConsoleWriter() Writer {
 	outLog := newLogWriter(log.New(os.Stdout, "", flags))
 	errLog := newLogWriter(log.New(os.Stderr, "", flags))
 	return &concreteWriter{
+		debugLog:  outLog,
 		infoLog:   outLog,
+		warnLog:   outLog,
 		errorLog:  errLog,
 		severeLog: errLog,
 		slowLog:   errLog,
@@ -91,7 +99,9 @@ func newConsoleWriter() Writer {
 func newFileWriter(c LogConf) (Writer, error) {
 	var err error
 	var opts []LogOption
+	var debugLog io.WriteCloser
 	var infoLog io.WriteCloser
+	var warnLog io.WriteCloser
 	var errorLog io.WriteCloser
 	var severeLog io.WriteCloser
 	var slowLog io.WriteCloser
@@ -119,6 +129,8 @@ func newFileWriter(c LogConf) (Writer, error) {
 	opts = append(opts, WithRotation(c.Rotation))
 
 	accessFile := path.Join(c.Path, accessFilename)
+	debugFile := path.Join(c.Path, debugFilename)
+	warnFile := path.Join(c.Path, warnFilename)
 	errorFile := path.Join(c.Path, errorFilename)
 	severeFile := path.Join(c.Path, severeFilename)
 	slowFile := path.Join(c.Path, slowFilename)
@@ -127,6 +139,12 @@ func newFileWriter(c LogConf) (Writer, error) {
 	handleOptions(opts)
 	setupLogLevel(c)
 
+	if debugLog, err = createOutput(debugFile); err != nil {
+		return nil, err
+	}
+	if warnLog, err = createOutput(warnFile); err != nil {
+		return nil, err
+	}
 	if infoLog, err = createOutput(accessFile); err != nil {
 		return nil, err
 	}
@@ -150,7 +168,9 @@ func newFileWriter(c LogConf) (Writer, error) {
 	stackLog = newLessWriter(errorLog, options.logStackCooldownMills)
 
 	return &concreteWriter{
+		debugLog:  debugLog,
 		infoLog:   infoLog,
+		warnLog:   warnLog,
 		errorLog:  errorLog,
 		severeLog: severeLog,
 		slowLog:   slowLog,
@@ -187,6 +207,14 @@ func (w *concreteWriter) Error(v interface{}, fields ...LogField) {
 	output(w.errorLog, levelError, v, fields...)
 }
 
+func (w *concreteWriter) Debug(v interface{}, fields ...LogField) {
+	output(w.debugLog, levelDebug, v, fields...)
+}
+
+func (w *concreteWriter) Warn(v interface{}, fields ...LogField) {
+	output(w.warnLog, levelWarn, v, fields...)
+}
+
 func (w *concreteWriter) Info(v interface{}, fields ...LogField) {
 	output(w.infoLog, levelInfo, v, fields...)
 }
@@ -208,6 +236,12 @@ func (w *concreteWriter) Stat(v interface{}, fields ...LogField) {
 }
 
 type nopWriter struct{}
+
+func (n nopWriter) Debug(v interface{}, fields ...LogField) {
+}
+
+func (n nopWriter) Warn(v interface{}, fields ...LogField) {
+}
 
 func (n nopWriter) Alert(_ interface{}) {
 }
